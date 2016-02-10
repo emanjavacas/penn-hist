@@ -28,7 +28,7 @@
                 wrt (clojure.java.io/writer outfn)]
       (doseq [line (line-seq rdr)
               :let [tokens (tokenizer line)
-                    out-ln (str/join " " tokens)]]
+                    out-ln (str (str/join " " tokens) "\n")]]
         (.write wrt out-ln)))))
 
 (defn usage [options-summary]
