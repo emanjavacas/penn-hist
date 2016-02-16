@@ -19,11 +19,29 @@
     (train/train-tokenizer
      (java.io.BufferedReader. (java.io.StringReader. joint-sents)))))
 
+(defmacro apply-middleware [base-tokenizer & middleware-fns]
+  `(-> ~base-tokenizer ~@middleware-fns))
+
+(defn split-parens
+  "middleware to split non-tokenized words containing parens"
+  [tokenizer]
+  (fn [sent]
+    (let [tokens (tokenizer sent)]
+      (mapcat (fn [w]
+                (str/split w #"((?=\))|(?<=\())"))
+              tokens))))
+
+(defn make-tokenizer [modelfn & middleware]
+  (let [tokenizer (nlp/make-tokenizer modelfn)]
+    (if (empty? middleware)
+      tokenizer
+      (apply-middleware tokenizer middleware))))
+
 (defn run-tokenizer
   "tokenizes infn into outfn using modelfn"
-  [infn outfn modelfn]
+  [infn outfn modelfn & middleware]
   {:pre [(and infn outfn modelfn)]}
-  (let [tokenizer (nlp/make-tokenizer modelfn)]
+  (let [tokenizer (make-tokenizer modelfn split-parens)]
     (with-open [rdr (clojure.java.io/reader infn)
                 wrt (clojure.java.io/writer outfn)]
       (doseq [line (line-seq rdr)
