@@ -1,4 +1,4 @@
-(ns penn-hist.tokenizer
+me(ns penn-hist.tokenizer
   (:require [clojure.tools.cli :refer [parse-opts]]
             [clojure.tools.logging :as log]
             [clojure.string :as str]
