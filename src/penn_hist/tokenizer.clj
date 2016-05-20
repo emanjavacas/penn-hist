@@ -31,7 +31,7 @@
       (.write wrt out-ln))))
 
 (defmacro apply-middleware [base-tokenizer & middleware]
-  `(-> ~base-tokenizer ~@middleware))
+  `(clojure.core/-> ~base-tokenizer ~@middleware))
 
 (defn split-parens-middleware
   "middleware to split non-tokenized words containing parens"
@@ -42,11 +42,9 @@
                 (str/split w #"((?=\))|(?<=\())"))
               tokens))))
 
-(defn make-tokenizer [modelfn & middleware]
+(defn make-tokenizer [modelfn]
   (let [tokenizer (nlp/make-tokenizer modelfn)]
-    (if (empty? middleware)
-      tokenizer
-      (apply-middleware tokenizer middleware))))
+    (apply-middleware tokenizer split-parens-middleware)))
 
 (defn run-tokenizer-on-file [infn outfn tokenizer]
   (with-open [rdr (clojure.java.io/reader infn)
@@ -57,7 +55,7 @@
 
 (defmulti run-tokenizer
   "tokenizes infn into outfn using modelfn"
-  (fn [inpath outpath modelfn & middleware]
+  (fn [inpath outpath modelfn]
     (let [infile (clojure.java.io/file inpath)]
       (cond (.isDirectory infile) :dir
             (.isFile infile)      :file
@@ -65,12 +63,12 @@
 
 (defmethod run-tokenizer :file
   [inpath outpath modelfn]
-  (let [tokenizer (make-tokenizer modelfn split-parens-middleware)]
+  (let [tokenizer (make-tokenizer modelfn)]
     (run-tokenizer-on-file inpath outpath tokenizer)))
 
 (defmethod run-tokenizer :dir
   [inpath outpath modelfn]
-  (let [tokenizer (make-tokenizer modelfn split-parens-middleware)
+  (let [tokenizer (make-tokenizer modelfn)
         files (file-seq (clojure.java.io/file inpath))]
     (doseq [f files
             :when (.isFile f)
