@@ -56,8 +56,13 @@
   "incorporates sent-id as metadata into each line"
   [sent]
   (let [[id tag] (last sent)]
-    (assert (= tag "ID"))
-    (with-meta (butlast sent) {:sent-id (.toLowerCase id)})))
+    (try
+      (if (not (= "ID" tag))
+        (with-meta sent {:sent-id "?"})
+        (with-meta (butlast sent) {:sent-id (.toLowerCase id)}))
+      (catch java.lang.NullPointerException e
+        (println sent)
+        (with-meta sent {:sent-id "?"})))))
 
 (defn parse-pos-lines
   "main parsing function for POS"

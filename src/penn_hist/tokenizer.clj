@@ -30,10 +30,10 @@
                   out-ln (str (str/join " " tokens) "\n")]]
       (.write wrt out-ln))))
 
-(defmacro apply-middleware [base-tokenizer & middleware-fns]
-  `(-> ~base-tokenizer ~@middleware-fns))
+(defmacro apply-middleware [base-tokenizer & middleware]
+  `(-> ~base-tokenizer ~@middleware))
 
-(defn split-parens
+(defn split-parens-middleware
   "middleware to split non-tokenized words containing parens"
   [tokenizer]
   (fn [sent]
@@ -64,17 +64,18 @@
             :else                 (throw (ex-info "Input path doesn't exist" {:path inpath}))))))
 
 (defmethod run-tokenizer :file
-  [inpath outpath modelfn & middleware]
-  (let [tokenizer (apply make-tokenizer modelfn split-parens middleware)]
+  [inpath outpath modelfn]
+  (let [tokenizer (make-tokenizer modelfn split-parens-middleware)]
     (run-tokenizer-on-file inpath outpath tokenizer)))
 
 (defmethod run-tokenizer :dir
-  [inpath outpath modelfn & middleware]
-  {:pre [(and inpath outpath modelfn)]}
-  (let [tokenizer (apply make-tokenizer modelfn split-parens middleware)
+  [inpath outpath modelfn]
+  (let [tokenizer (make-tokenizer modelfn split-parens-middleware)
         files (file-seq (clojure.java.io/file inpath))]
     (doseq [f files
+            :when (.isFile f)
             :let [outpath (str outpath "/" (.getName f) ".token")]]
+      (log/info (str "Tokenizing file: [" outpath "]" ))
       (run-tokenizer-on-file f outpath tokenizer))))
 
 (defn usage [options-summary]
@@ -123,4 +124,5 @@
                             fname (ensure-ext outfn "bin")]
                         (log/info "Saving model to" outfn)
                         (train/write-model model fname))
-              (throw (ex-info "Don't know what to do" {:cause "Unknown clause"}))))))
+              "help" (usage summary)
+              (usage summary)))))
