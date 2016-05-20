@@ -1,3 +1,11 @@
 *~
-.nrepl*
-.lein*
+#*
+*.jar
+*.class
+/.nrepl*
+/.lein*
+/target
+/classses
+/checkouts
+/output
+pom.xml
