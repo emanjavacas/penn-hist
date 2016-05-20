@@ -1,5 +1,6 @@
 (ns penn-hist.readers
   (:require [clojure.java.io :as io]
+            [clojure.string :as str]
             [clojure.data.csv :as csv]
             [environ.core :refer [env]]))
 

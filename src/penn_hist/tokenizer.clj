@@ -48,16 +48,34 @@
       tokenizer
       (apply-middleware tokenizer middleware))))
 
-(defn run-tokenizer
+(defn run-tokenizer-on-file [infn outfn tokenizer]
+  (with-open [rdr (clojure.java.io/reader infn)
+              wrt (clojure.java.io/writer outfn)]
+    (doseq [line (line-seq rdr)
+            :let [tokens (tokenizer line)]]
+      (.write wrt (str (str/join " " tokens) "\n")))))
+
+(defmulti run-tokenizer
   "tokenizes infn into outfn using modelfn"
-  [infn outfn modelfn & middleware]
-  {:pre [(and infn outfn modelfn)]}
+  (fn [inpath outpath modelfn & middleware]
+    (let [infile (clojure.java.io/file inpath)]
+      (cond (.isDirectory infile) :dir
+            (.isFile infile)      :file
+            :else                 (throw (ex-info "Input path doesn't exist" {:path inpath}))))))
+
+(defmethod run-tokenizer :file
+  [inpath outpath modelfn & middleware]
   (let [tokenizer (apply make-tokenizer modelfn split-parens middleware)]
-    (with-open [rdr (clojure.java.io/reader infn)
-                wrt (clojure.java.io/writer outfn)]
-      (doseq [line (line-seq rdr)
-              :let [tokens (tokenizer line)]]
-        (.write wrt (str (str/join " " tokens) "\n"))))))
+    (run-tokenizer-on-file inpath outpath tokenizer)))
+
+(defmethod run-tokenizer :dir
+  [inpath outpath modelfn & middleware]
+  {:pre [(and inpath outpath modelfn)]}
+  (let [tokenizer (apply make-tokenizer modelfn split-parens middleware)
+        files (file-seq (clojure.java.io/file inpath))]
+    (doseq [f files
+            :let [outpath (str outpath "/" (.getName f) ".token")]]
+      (run-tokenizer-on-file f outpath tokenizer))))
 
 (defn usage [options-summary]
   (->> ["Train or use a OpenNLP tokenizer through Clojure"
@@ -69,9 +87,7 @@
         ""
         "Actions:"
         "  train    Train a tokenizer. Requires n-sents & outfn (for the model)"
-        "  tokenize Tokenize text.     Requires infn, outfn & modelfn"
-        ""
-        "Please refer to the manual page for more information."]
+        "  tokenize Tokenize text.     Requires infn, outfn & modelfn"]
        (str/join \newline)))
 
 (defn ensure-ext [fname ext]
@@ -88,12 +104,12 @@
   (System/exit status))
 
 (defn -main [& args]
-  (let [cli-options [["-n" "--n-sents N-SENTS" "Number of sentences to train on"
+  (let [cli-options [["-n" "--n-sents N-SENTS" "Number of sentences to train on (train)"
                       :parse-fn #(Integer/parseInt %)]
-                     ["-o" "--outfn OUTPUT-FILE" "path to the output file"               
+                     ["-o" "--outfn OUTPUT-FILE" "path to the output file (train/tokenize)"
                       :parse-fn str]
-                     ["-i" "--infn INPUT-FILE" "path to the input file"]
-                     ["-m" "--modelfn MODEL-PATH" "path to model binaries"]
+                     ["-i" "--infn INPUT-FILE" "path to the input file (tokenize)"]
+                     ["-m" "--modelfn MODEL-PATH" "path to model binaries (tokenize)"]
                      ["-h" "--help"]]
         {:keys [options arguments errors summary]} (parse-opts args cli-options)
         {:keys [tokenize train n-sents outfn infn modelfn help]} options]
