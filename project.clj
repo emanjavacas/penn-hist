@@ -11,4 +11,4 @@
                  [environ "1.0.2"]]
   :plugins [[lein-environ "1.0.2"]]
   :jvm-opts ["-Xmx4000M"]
-  :main "penn-hist.tokenizer")
+  :main penn-hist.tokenizer)

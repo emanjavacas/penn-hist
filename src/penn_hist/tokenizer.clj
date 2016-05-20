@@ -2,6 +2,7 @@
   (:require [clojure.tools.cli :refer [parse-opts]]
             [clojure.tools.logging :as log]
             [clojure.string :as str]
+            [clojure.java.io :as io]
             [penn-hist.readers :refer [string-pos-sents]]
             [opennlp.nlp :as nlp]
             [opennlp.tools.train :as train]))
@@ -19,17 +20,28 @@
     (train/train-tokenizer
      (java.io.BufferedReader. (java.io.StringReader. joint-sents)))))
 
+(defn tokenize-file [infn outfn tokenizer]
+  (with-open [rdr (clojure.java.io/reader infn)
+              wrt (clojure.java.io/writer outfn)]
+    (log/info "Tokenizing " (.getName (io/as-file infn))
+              " to "        (.getName (io/as-file outfn)))
+    (doseq [line (line-seq rdr)
+            :let [tokens (tokenizer line)
+                  out-ln (str (str/join " " tokens) "\n")]]
+      (.write wrt out-ln))))
+
 (defn run-tokenizer
   "tokenizes infn into outfn using modelfn"
   [infn outfn modelfn]
   {:pre [(and infn outfn modelfn)]}
-  (let [tokenizer (nlp/make-tokenizer modelfn)]
-    (with-open [rdr (clojure.java.io/reader infn)
-                wrt (clojure.java.io/writer outfn)]
-      (doseq [line (line-seq rdr)
-              :let [tokens (tokenizer line)
-                    out-ln (str (str/join " " tokens) "\n")]]
-        (.write wrt out-ln)))))
+  (let [tokenizer (nlp/make-tokenizer modelfn)
+        in-file (io/file infn)]
+    (cond
+      (.isFile in-file) (tokenize-file infn outfn tokenizer)
+      (.isDirectory in-file)
+      (doseq [f (.listFiles in-file)
+              :let [outfn (str outfn (.getName f) ".tokenized")]]
+        (tokenize-file f outfn tokenizer)))))
 
 (defn usage [options-summary]
   (->> ["Train or use a OpenNLP tokenizer through Clojure"

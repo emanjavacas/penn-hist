@@ -83,5 +83,3 @@
 
 (def pos-sents (parse-pos-lines (lines root)))
 (def string-pos-sents (map pos-sent->string-sent pos-sents))
-
-
