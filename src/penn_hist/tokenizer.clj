@@ -30,18 +30,34 @@
                   out-ln (str (str/join " " tokens) "\n")]]
       (.write wrt out-ln))))
 
+(defmacro apply-middleware [base-tokenizer & middleware-fns]
+  `(-> ~base-tokenizer ~@middleware-fns))
+
+(defn split-parens
+  "middleware to split non-tokenized words containing parens"
+  [tokenizer]
+  (fn [sent]
+    (let [tokens (tokenizer sent)]
+      (mapcat (fn [w]
+                (str/split w #"((?=\))|(?<=\())"))
+              tokens))))
+
+(defn make-tokenizer [modelfn & middleware]
+  (let [tokenizer (nlp/make-tokenizer modelfn)]
+    (if (empty? middleware)
+      tokenizer
+      (apply-middleware tokenizer middleware))))
+
 (defn run-tokenizer
   "tokenizes infn into outfn using modelfn"
-  [infn outfn modelfn]
+  [infn outfn modelfn & middleware]
   {:pre [(and infn outfn modelfn)]}
-  (let [tokenizer (nlp/make-tokenizer modelfn)
-        in-file (io/file infn)]
-    (cond
-      (.isFile in-file) (tokenize-file infn outfn tokenizer)
-      (.isDirectory in-file)
-      (doseq [f (.listFiles in-file)
-              :let [outfn (str outfn (.getName f) ".tokenized")]]
-        (tokenize-file f outfn tokenizer)))))
+  (let [tokenizer (apply make-tokenizer modelfn split-parens middleware)]
+    (with-open [rdr (clojure.java.io/reader infn)
+                wrt (clojure.java.io/writer outfn)]
+      (doseq [line (line-seq rdr)
+              :let [tokens (tokenizer line)]]
+        (.write wrt (str (str/join " " tokens) "\n"))))))
 
 (defn usage [options-summary]
   (->> ["Train or use a OpenNLP tokenizer through Clojure"
