@@ -4,6 +4,7 @@
 *.class
 /.nrepl*
 /.lein*
+/models
 /target
 /classses
 /checkouts
