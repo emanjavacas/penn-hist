@@ -4,6 +4,7 @@
             [clojure.string :as str]
             [clojure.java.io :as io]
             [penn-hist.readers :refer [string-pos-sents]]
+            [penn-hist.middleware :as m]
             [opennlp.nlp :as nlp]
             [opennlp.tools.train :as train]))
 
@@ -30,21 +31,9 @@
                   out-ln (str (str/join " " tokens) "\n")]]
       (.write wrt out-ln))))
 
-(defmacro apply-middleware [base-tokenizer & middleware]
-  `(clojure.core/-> ~base-tokenizer ~@middleware))
-
-(defn split-parens-middleware
-  "middleware to split non-tokenized words containing parens"
-  [tokenizer]
-  (fn [sent]
-    (let [tokens (tokenizer sent)]
-      (mapcat (fn [w]
-                (str/split w #"((?=\))|(?<=\())"))
-              tokens))))
-
 (defn make-tokenizer [modelfn]
   (let [tokenizer (nlp/make-tokenizer modelfn)]
-    (apply-middleware tokenizer split-parens-middleware)))
+    (m/apply-regexes tokenizer )))
 
 (defn run-tokenizer-on-file [infn outfn tokenizer]
   (with-open [rdr (clojure.java.io/reader infn)
