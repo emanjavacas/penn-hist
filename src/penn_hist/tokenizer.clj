@@ -8,10 +8,12 @@
             [opennlp.nlp :as nlp]
             [opennlp.tools.train :as train]))
 
+(def SPLIT "<SPLIT>")
+
 (defn string-sent->maxent
   "inserts <SPLIT> token in front blankspace followed by punctuation"
   [sent]
-  (str/replace sent #" ([^ \w]+)" "<SPLIT>$1"))
+  (str/replace sent #" ([^ \w]+)" (str SPLIT "$1")))
 
 (defn train-token-model
   "trains tokenization model"
@@ -24,8 +26,7 @@
 (defn tokenize-file [infn outfn tokenizer]
   (with-open [rdr (clojure.java.io/reader infn)
               wrt (clojure.java.io/writer outfn)]
-    (log/info "Tokenizing " (.getName (io/as-file infn))
-              " to "        (.getName (io/as-file outfn)))
+    (log/info "Tokenizing " (.getName (io/as-file infn)) " to " (.getName (io/as-file outfn)))
     (doseq [line (line-seq rdr)
             :let [tokens (tokenizer line)
                   out-ln (str (str/join " " tokens) "\n")]]

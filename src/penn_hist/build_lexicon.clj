@@ -17,7 +17,9 @@
 (defn path-to [dir fname]
   (str/join "/" [(System/getProperty "user.dir") dir fname]))
 
-(defn write-tokens [tokens fname & {:keys [sep] :or {sep " "}}]
+(defn write-tokens
+  "writes word counts to a format (str word sep frequency)"
+  [tokens fname & {:keys [sep] :or {sep " "}}]
   (let [out-file (path-to "resources" fname)]
     (with-open [wrt (io/writer out-file)]
       (doseq [[w freq] (sort-by second > (frequencies tokens))]
@@ -27,6 +29,7 @@
 (comment (write-tokens tokens "token-frequencies.txt"))
 
 (defn read-lexicon
+  "returns a map of words to the respective frequencies"
   [fname & {:keys [sep on-key-fn] :or {sep " " on-key-fn str/lower-case}}]
   (with-open [rdr (io/reader (path-to "resources" fname))]
     (into {} (doall

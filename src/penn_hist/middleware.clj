@@ -28,16 +28,27 @@
       (apply apply-local-regexes tokens regexes))))
 
 (defn dash-middleware
+  "lexicon is a ma"
   [tokenizer lexicon]
   (fn [sent]
-    (let [tokens (tokenizer sent)]
-      (mapcat (fn [token]
-                (cond (not (has-dash token) token)
-                      (contains? lexicon (str/lower-case token)) token
-                      :else (split-dashes token)))
-              tokens))))
+    (->> (tokenizer sent)
+         (mapcat (fn [token]
+                   (cond (not (has-dash token)) [token]
+                         (contains? lexicon (str/lower-case token)) [token]
+                         :else (split-dashes token)))))))
 
-(comment (let [tokenizer #(str/split % #" ")]
-           (-> tokenizer
-               (regexes-middleware (:brackets regexes) (:parens regexes))
-               (dash-middleware (read-lexicon "dash-lexicon.txt")))))
+(comment
+  (def test-sents
+  [["Thus spoke the Matron—The convicted Crew"
+    "Thus spoke the Matron — The convicted Crew"]
+   ["A Duke, a Dog-whipper you are! such a knot of Fools, that the King, instead of punishing,"
+    "A Duke , a Dog-whipper you are ! such a knot of Fools , that the King , instead of punishing ,"]
+   ["pities you—But I shall make bold to turn you out of your Dignitie, my Lord Duke."
+    "pities you — But I shall make bold to turn you out of your Dignitie , my Lord Duke ."]
+   ["should have been [All those] when as there is never a [Those] at all in the argument ."
+    "should have been [ All those ] when as there is never a [ Those ] at all in the argument ."]])
+  (def tokenizer
+    (-> #(str/split % #" ")
+        (regexes-middleware (:brackets regexes) (:parens regexes))
+        (dash-middleware (read-lexicon "dash-tokens.txt"))))
+  (tokenizer (first (second test-sents))))
