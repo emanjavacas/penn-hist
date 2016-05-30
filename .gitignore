@@ -4,11 +4,9 @@
 *.class
 /.nrepl*
 /.lein*
-/models
 /target
 /classses
 /checkouts
 /output
-/resources
 /dev-resources
 pom.xml
