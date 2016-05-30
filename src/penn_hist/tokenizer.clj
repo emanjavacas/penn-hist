@@ -33,8 +33,7 @@
       (.write wrt out-ln))))
 
 (defn make-tokenizer [modelfn]
-  (let [tokenizer (nlp/make-tokenizer modelfn)]
-    (m/apply-regexes tokenizer )))
+  (m/wrap-tokenizer (nlp/make-tokenizer modelfn)))
 
 (defn run-tokenizer-on-file [infn outfn tokenizer]
   (with-open [rdr (clojure.java.io/reader infn)
