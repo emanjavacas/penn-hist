@@ -1,9 +1,9 @@
 (ns penn-hist.pos
-  (:require [penn-hist.readers :refer [get-info files lines]]
+  (:require [penn-hist.readers :refer [get-info files lazy-lines]]
             [clojure.string :as str]
             [environ.core :refer [env]]))
 
-(def root (:root env))
+
 
 (defn remove-corpus-meta
   "drops lines containing corpus metadata: '^[<|{].*'"
@@ -52,6 +52,3 @@
   "joins a seq of [word tag] vectors into a string sentence"
   [token-sent]
   (str/join " " (map first token-sent)))
-
-(def pos-sents (parse-pos-lines (lines root)))
-(def string-pos-sents (map pos-sent->string-sent pos-sents))

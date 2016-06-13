@@ -8,9 +8,8 @@
 
 (defn get-info
   "reads the corpus info file"
-  [& {:keys [in-file] :or {in-file (str root "corpus_data.csv")}}]
-  (prn root)
-  (with-open [file (io/reader in-file)]
+  [root & {:keys [in-file] :or {in-file "corpus_data.csv"}}]
+  (with-open [file (io/reader (apply str/join " " root in-file))]
     (let [lines (next (doall (csv/read-csv file)))
           ->row (fn [& keys] (fn [l] (zipmap keys (next l))))]
       (zipmap (map first lines)
@@ -25,7 +24,7 @@
     (filter (fn [f] (and (not (dir? f)) (re-find regex (.getName f))))
             (tree-seq dir? list-files (io/file root)))))
 
-(defn lines
+(defn lazy-lines
   "lazy-seq over lines from a given set of files"
   [root]
   (let [fs (files root)]
@@ -85,5 +84,10 @@
   [token-sent]
   (str/join " " (map first token-sent)))
 
-(def pos-sents (parse-pos-lines (lines root)))
-(def string-pos-sents (map pos-sent->string-sent pos-sents))
+(defn pos-sents [root]
+  (parse-pos-lines (lazy-lines root)))
+
+(defn string-pos-sents [root]
+  (->> (lazy-lines root)
+       parse-pos-lines
+       (map pos-sent->string-sent)))

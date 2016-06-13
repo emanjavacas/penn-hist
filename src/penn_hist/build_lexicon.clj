@@ -11,7 +11,7 @@
 
 (comment (split-dashes "Iam-fun"))
 
-(def tokens (mapcat #(map first %) pos-sents))
+(defn tokens [root] (mapcat #(map first %) (pos-sents root)))
 (def dash-tokens (filter has-dash tokens))
 
 (defn path-to [dir fname]
