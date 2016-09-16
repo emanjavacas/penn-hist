@@ -60,14 +60,14 @@
 
 (defn wordify
   "returns a xml tree with tokenized words inside :w elements with consecutive ids"
-  [zipper tokenizer {:keys [include-ids] :or {include-ids true}}]
+  [zipper tokenizer include-ids]
   (->> (edit-tree zipper (words-editor tokenizer include-ids)) zip/xml-zip remove-dummies))
 
 (defn wordify-editor
-  [tokenizer]
+  [tokenizer {:keys [include-ids]}]
   (fn [node loc]
     (let [zipper (zip/xml-zip node)]
-      (zip/xml-zip (wordify zipper tokenizer)))))
+      (zip/xml-zip (wordify zipper tokenizer include-ids)))))
 
 (defn f->zip [fname]
   (-> fname
@@ -78,11 +78,11 @@
 (defn xml->file [tree outfn]
   (spit outfn (xml/indent-str tree)))
 
-(defn wordify-file [infn outfn tokenizer & [args]]
+(defn wordify-file
+  [infn outfn tokenizer & {:keys [include-ids tag] :or {include-ids true match-tag :doc} :as args}]
   (-> (f->zip infn)
-      (edit-tree (wordify-editor tokenizer args) :matcher (match-tag :doc))
+      (edit-tree (wordify-editor tokenizer args) :matcher (match-tag tag))
       (xml->file outfn)))
-
 
 (comment (wordify-file
           "/home/enrique/mbg_repos/mbg_corpus/output/A00214.xml"
