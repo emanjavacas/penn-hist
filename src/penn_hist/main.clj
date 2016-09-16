@@ -20,7 +20,7 @@
           (.isFile infile)      :file
           :else                 (throw (ex-info "Input path doesn't exist" {:path inpath})))))
 
-(defn run-on-files [inpath outpath modelfn {:keys [ext on-file-fn info-fn]}]
+(defn run-on-files [inpath outpath modelfn {:keys [ext on-file-fn info-fn args]}]
   (let [tokenizer (make-tokenizer modelfn)
         files (file-seq (io/file inpath))]
     (doseq [f files
@@ -30,7 +30,7 @@
                   outpath (str outpath "/" basename "." ext)]]
       (log/info (info-fn outpath))
       (try
-        (on-file-fn inpath outpath tokenizer)
+        (apply on-file-fn inpath outpath tokenizer args)
         (catch Exception e
           (log/info "Error while processing file [" inpath "]" (str e)))))))
 
@@ -52,20 +52,21 @@
     :info-fn (fn [outpath] (str "Tokenizing file: [" outpath "]"))}))
 
 (defmulti wordify
-  (fn [inpath outpath modelfn] (dispatch-on-type inpath outpath)))
+  (fn [inpath outpath modelfn & args] (dispatch-on-type inpath outpath)))
 
 (defmethod wordify :file
-  [inpath outpath modelfn]
+  [inpath outpath modelfn & args]
   (let [tokenizer (make-tokenizer modelfn)]
-    (wordify-file inpath outpath tokenizer)))
+    (apply wordify-file inpath outpath tokenizer args)))
 
 (defmethod wordify :dir
-  [inpath outpath modelfn]
+  [inpath outpath modelfn & args]
   (run-on-files
    inpath outpath modelfn
    {:on-file-fn wordify-file
     :ext "xml"
-    :info-fn (fn [outpath] (str "Wordifying file: [" outpath "}"))}))
+    :info-fn (fn [outpath] (str "Wordifying file: [" outpath "}"))
+    :args args}))
 
 (defn usage [options-summary]
   (->> ["Train or use a OpenNLP tokenizer through Clojure"
