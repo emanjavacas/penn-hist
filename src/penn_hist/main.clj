@@ -99,9 +99,12 @@
          ["-m" "--modelfn MODEL-PATH" "path to model binaries (tokenize)"]
          ["-I" "--include-ids INCLUDE_IDS" "append a unique integer id to each word"
           :parse-fn boolean]
+         ["-t" "--tag TAG" "tokenize words inside tag"
+          :parse-fn keyword]
          ["-h" "--help"]]
         {:keys [options arguments errors summary]} (parse-opts args cli-options)
-        {:keys [tokenize train n-sents outfn infn modelfn help include-ids]} options]
+        {:keys [tokenize train n-sents outfn infn modelfn help include-ids tag]
+         :or {tag :doc}} options]
     (cond
       help (exit 0 (usage summary))
       (not= (count arguments) 1) (exit 1 (usage summary))
@@ -109,6 +112,6 @@
       :else (case (first arguments)
               "tokenize" (run-tokenizer infn outfn modelfn)
               "train"  (run-training infn outfn n-sents)
-              "wordify" (wordify infn outfn modelfn :include-ids include-ids)
+              "wordify" (wordify infn outfn modelfn :include-ids include-ids :tag tag)
               "help" (usage summary)
               (usage summary)))))
