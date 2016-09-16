@@ -48,19 +48,20 @@
 (defn words-editor
   "returns an editor that converts textual nodes into a tokenized sequence of :w nodes. Leaves
    residual :dummy nodes as parents of each seq of :w tokens. Use `remove-dummies` for that."
-  [tokenizer]
+  [tokenizer include-ids]
   (fn [node loc]
     (let [parent (zip/up loc)]
       (if (and parent (not (match-word parent)) (string? node))
         (apply xml/element :dummy {}
-               (mapv (fn [w] (xml/element :w {:id (swap! counter inc)} w))
+               (mapv (fn [w] (let [attrib (if include-ids {:id (swap! counter inc)} {})]
+                               (xml/element :w attrib w)))
                      (remove empty? (tokenizer node))))
         node))))
 
 (defn wordify
   "returns a xml tree with tokenized words inside :w elements with consecutive ids"
-  [zipper tokenizer]
-  (->> (edit-tree zipper (words-editor tokenizer)) zip/xml-zip remove-dummies))
+  [zipper tokenizer {:keys [include-ids] :or {include-ids true}}]
+  (->> (edit-tree zipper (words-editor tokenizer include-ids)) zip/xml-zip remove-dummies))
 
 (defn wordify-editor
   [tokenizer]
@@ -77,9 +78,9 @@
 (defn xml->file [tree outfn]
   (spit outfn (xml/indent-str tree)))
 
-(defn wordify-file [infn outfn tokenizer]
+(defn wordify-file [infn outfn tokenizer & [args]]
   (-> (f->zip infn)
-      (edit-tree (wordify-editor tokenizer) :matcher (match-tag :doc))
+      (edit-tree (wordify-editor tokenizer args) :matcher (match-tag :doc))
       (xml->file outfn)))
 
 
